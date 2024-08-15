@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = 'finder_entreprises'
+        REGISTRY = 'your-docker-registry'
+        REGISTRY_CREDENTIALS = 'docker-registry-credentials'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/Bazev/finderEntreprise.git'
+            }
+        }
+
+        stage('Build Maven Project') {
+            steps {
+                sh './mvnw clean package'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build(DOCKER_IMAGE)
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // Ajoutez ici les étapes pour tester votre application
+                sh './mvnw test'
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry("https://${REGISTRY}", "${REGISTRY_CREDENTIALS}") {
+                        docker.image(DOCKER_IMAGE).push("${env.BUILD_NUMBER}")
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                // Ici, vous pouvez inclure les étapes pour déployer votre conteneur
+                sh """
+                   docker stop ${DOCKER_IMAGE} || true
+                   docker rm ${DOCKER_IMAGE} || true
+                   docker run -d --name ${DOCKER_IMAGE} -p 8080:8080 ${REGISTRY}/${DOCKER_IMAGE}:${env.BUILD_NUMBER}
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}

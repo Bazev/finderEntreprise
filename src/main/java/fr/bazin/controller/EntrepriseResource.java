@@ -21,7 +21,7 @@ public class EntrepriseResource {
 
 
     @GET
-    @Path("/search/{nomDirigeant}")
+    @Path("/recherche/{nomDirigeant}")
     @Produces(MediaType.APPLICATION_JSON)
     public List<EntrepriseResponse.Entreprise> getEntreprisesByName(@PathParam("nomDirigeant") String nomDirigeant) {
         EntrepriseResponse response = entreprisesService.getEntreprisesByName(nomDirigeant);
